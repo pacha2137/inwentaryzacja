@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user.get_full_name }} - Inwentaryzacja{% endblock %}
+
+{% block content %}
+
+<div class="detail-header">
+
+    <a href="{% url 'user_list' %}" class="back-link">
+        ← Powrót do użytkowników
+    </a>
+
+    <h1>{{ user.get_full_name|default:user.username }}</h1>
+
+    <p>{{ user.username }}</p>
+
+</div>
+
+
+<div class="detail-card">
+
+    <h2>Sprzęt użytkownika</h2>
+
+    {% if assets %}
+
+        <div class="table-container">
+
+            <table class="asset-table">
+
+                <thead>
+                    <tr>
+                        <th>Tag</th>
+                        <th>Kategoria</th>
+                        <th>Producent</th>
+                        <th>Model</th>
+                        <th>Numer seryjny</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for asset in assets %}
+
+                    <tr>
+
+                        <td>
+                            <a
+                                href="{% url 'asset_detail' asset.pk %}"
+                                class="asset-tag"
+                            >
+                                {{ asset.tag }}
+                            </a>
+                        </td>
+
+                        <td>{{ asset.category }}</td>
+
+                        <td>{{ asset.manufacturer|default:"—" }}</td>
+
+                        <td>{{ asset.model|default:"—" }}</td>
+
+                        <td>{{ asset.serial_number|default:"—" }}</td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <p class="muted">
+            Ten użytkownik nie ma przypisanego sprzętu.
+        </p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

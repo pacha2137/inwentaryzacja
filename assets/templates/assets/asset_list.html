@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Sprzęt - Inwentaryzacja{% endblock %}
+
+{% block content %}
+
+<div class="page-header page-header-row">
+    <div>
+        <h1>Urządzenia</h1>
+        <p>Lista wszystkich urządzeń w ewidencji</p>
+    </div>
+
+    <a href="{% url 'asset_create' %}" class="search-button">
+        + Dodaj urządzenie
+    </a>
+</div>
+
+<form method="get" class="search-form">
+    <input
+        type="text"
+        name="q"
+        value="{{ query }}"
+        placeholder="Szukaj po tagu, modelu, użytkowniku..."
+        class="search-input"
+    >
+
+    <button type="submit" class="search-button">
+        Szukaj
+    </button>
+</form>
+
+
+<div class="table-container">
+ <table class="asset-table">
+
+    <thead>
+        <tr>
+            <th>Tag</th>
+            <th>Kategoria</th>
+            <th>Producent</th>
+            <th>Model</th>
+            <th>Numer seryjny</th>
+            <th>Użytkownik</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for asset in assets %}
+        <tr>
+            <td>
+                <a href="{% url 'asset_detail' asset.pk %}" class="asset-tag">
+                   {{ asset.tag }}
+                </a>
+            </td>
+
+            <td>{{ asset.category }}</td>
+            <td>{{ asset.manufacturer }}</td>
+            <td>{{ asset.model }}</td>
+            <td>{{ asset.serial_number }}</td>
+
+            <td>
+                {% if asset.assigned_to %}
+                    {{ asset.assigned_to.get_full_name }}
+                {% else %}
+                    Brak przypisania
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+            <tr>
+                <td colspan="6" class="empty-message">
+                    Brak sprzętu.
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+ </table>
+</div>
+
+{% endblock %}

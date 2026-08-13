@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ asset.tag }} - Inwentaryzacja{% endblock %}
+
+{% block content %}
+
+<div class="detail-header">
+    <div>
+        <a href="{% url 'asset_list' %}" class="back-link">
+            ← Powrót do sprzętu
+        </a>
+
+        <h1>{{ asset.manufacturer }} {{ asset.model }}</h1>
+
+        <p>{{ asset.category }}</p>
+    </div>
+</div>
+
+
+<div class="detail-card">
+
+    <h2>Informacje</h2>
+
+    <div class="detail-grid">
+
+        <div class="detail-item">
+            <span>Tag</span>
+            <strong>{{ asset.tag }}</strong>
+        </div>
+
+        <div class="detail-item">
+            <span>Numer seryjny</span>
+            <strong>
+                {% if asset.serial_number %}
+                    {{ asset.serial_number }}
+                {% else %}
+                    —
+                {% endif %}
+            </strong>
+        </div>
+
+        <div class="detail-item">
+            <span>Producent</span>
+            <strong>{{ asset.manufacturer|default:"—" }}</strong>
+        </div>
+
+        <div class="detail-item">
+            <span>Model</span>
+            <strong>{{ asset.model|default:"—" }}</strong>
+        </div>
+
+        <div class="detail-item">
+            <span>Kategoria</span>
+            <strong>{{ asset.category }}</strong>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="detail-card">
+
+    <h2>Użytkownik</h2>
+
+    {% if asset.assigned_to %}
+
+        <a
+            href="{% url 'user_detail' asset.assigned_to.pk %}"
+            class="user-link"
+        >
+            <strong>{{ asset.assigned_to.get_full_name }}</strong>
+
+            <span>
+                {{ asset.assigned_to.username }}
+            </span>
+        </a>
+
+    {% else %}
+
+        <p class="muted">
+            Sprzęt nie jest przypisany do użytkownika.
+        </p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
