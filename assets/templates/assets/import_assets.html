@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="detail-header">
+        <a href="{% url 'asset_list' %}" class="back-link">← Wróć do listy</a>
+        <h1>Importuj urządzenia z CSV</h1>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="login-error">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="detail-card" style="max-width: 600px;">
+        <h2>Format pliku CSV</h2>
+        <p style="color: var(--muted); font-size: 0.9rem;">Plik CSV musi zawierać następujące kolumny (bez polskich znaków w nagłówkach):</p>
+        <div style="background: #f9fafb; border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 20px; font-family: monospace; font-size: 0.85rem; overflow-x: auto;">
+TAG,KATEGORIA,PRODUCENT,MODEL,NUMER SERYJNY,PRZYPISANO DO<br>
+1234,Laptop,Dell,XPS 13,ABC123,admin<br>
+5678,Monitor,LG,27",DEF456,user1
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="asset-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_csv_file">{{ form.csv_file.label }}</label>
+                {{ form.csv_file }}
+                {% if form.csv_file.help_text %}
+                    <small style="color: var(--muted);">{{ form.csv_file.help_text }}</small>
+                {% endif %}
+                {% if form.csv_file.errors %}
+                    <div class="form-error">
+                        {% for error in form.csv_file.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'asset_list' %}" class="cancel-button">Anuluj</a>
+                <button type="submit" class="primary-button">Importuj</button>
+            </div>
+        </form>
+
+        <div style="background: #e0e7ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 12px; margin-top: 20px;">
+            <p style="color: #3730a3; margin: 0; font-size: 0.9rem;">
+                <strong>💡 Wskazówka:</strong> Upewnij się, że loginy w kolumnie "PRZYPISANO DO" istnieją w systemie. 
+                Jeśli login nie istnieje, wiersz będzie pominięty.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

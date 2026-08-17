@@ -1,8 +1,52 @@
+# Python
 __pycache__/
 *.py[cod]
-db.sqlite3
-.env
-.venv/
+*.pyo
+*.pyd
+.Python
+env/
 venv/
+.venv/
+
+# Database (kept separate from code)
+db.sqlite3
+data/
+*.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Static and Media
+/staticfiles/
+/media/
+
+# Backup files
+*.bak
+*.backup
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Security
+*.pem
+*.key
+*.crt

@@ -14,10 +14,21 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
+from assets.views_error import error_404, error_500, error_403
 
 urlpatterns = [
+    path('', include('assets.urls')),
     path('admin/', admin.site.urls),
-    path('assets/', include('assets.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Custom error handlers
+handler404 = error_404
+handler500 = error_500
+handler403 = error_403

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="detail-header">
+        <a href="{% url 'user_management_list' %}" class="back-link">← Wróć do listy</a>
+        <h1>Usuń użytkownika</h1>
+    </div>
+
+    <div class="detail-card" style="max-width: 500px;">
+        <div style="margin-bottom: 20px;">
+            <p style="font-size: 1rem; margin-bottom: 16px;">
+                Czy na pewno chcesz usunąć użytkownika <strong>{{ user_obj.username }}</strong>?
+            </p>
+            <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                <p style="color: #991b1b; margin: 0; font-size: 0.9rem;">
+                    ⚠️ Ta operacja jest nieodwracalna. Wszystkie dane użytkownika zostaną usunięte.
+                </p>
+            </div>
+        </div>
+
+        <form method="post" class="asset-form">
+            {% csrf_token %}
+            
+            <div class="form-actions">
+                <a href="{% url 'user_management_list' %}" class="cancel-button">Anuluj</a>
+                <button type="submit" class="primary-button" style="background: #dc2626;">Usuń użytkownika</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

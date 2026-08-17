@@ -11,21 +11,33 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from project root
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
+DATA_DIR = BASE_DIR / 'data'
+DATA_DIR.mkdir(exist_ok=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xxk-hnj^z#f!2u^hlrwx127wudt*r_7ur9=^)w3wc0*_s!k@mz'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG_VALUE = os.getenv('DEBUG', 'False').strip().lower()
+DEBUG = DEBUG_VALUE not in {'0', 'false', 'no', 'off', ''}
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Application definition
@@ -42,12 +54,15 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'inwentaryzacja.middleware.SecurityHeadersMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'inwentaryzacja.middleware.RateLimitMiddleware',
+    'inwentaryzacja.middleware.CustomErrorHandlerMiddleware',
 ]
 
 ROOT_URLCONF = 'inwentaryzacja.urls'
@@ -72,11 +87,12 @@ WSGI_APPLICATION = 'inwentaryzacja.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+# Database is stored in data/ folder, separate from code
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DATA_DIR / 'inwentaryzacja.db',
     }
 }
 
@@ -115,7 +131,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'assets' / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 # Email
@@ -126,3 +144,130 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+
+# ===== SECURITY SETTINGS =====
+
+# SSL/TLS Configuration
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
+
+# HSTS (HTTP Strict Transport Security)
+SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False').lower() == 'true'
+SECURE_HSTS_PRELOAD = os.getenv('SECURE_HSTS_PRELOAD', 'False').lower() == 'true'
+
+# Session Configuration
+SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', '86400'))  # 24 hours
+SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE', 'True').lower() == 'true'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Strict'
+
+# CSRF Protection
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Strict'
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000').split(',')
+
+# Security Headers
+SECURE_CONTENT_SECURITY_POLICY = {
+    'default-src': ("'self'",),
+    'script-src': ("'self'",),
+    'style-src': ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"),
+    'img-src': ("'self'", "data:"),
+    'font-src': ("'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"),
+    'connect-src': ("'self'",),
+    'frame-ancestors': ("'none'",),
+}
+
+# X-Frame-Options
+X_FRAME_OPTIONS = 'DENY'
+
+# Cache Control
+CACHE_CONTROL_MAX_AGE = 3600
+
+# Caching Configuration (for rate limiting)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 900,  # 15 minutes
+    }
+}
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'security': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'security.log',
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+        'django.security': {
+            'handlers': ['security'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'assets': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+    },
+}
+
+# Create logs directory
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)
+
+# File Upload Security
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
+FILE_UPLOAD_ALLOWED_EXTENSIONS = ['csv', 'txt']
+
+# Custom error handlers
+if not DEBUG:
+    # Production error handlers
+    pass
+

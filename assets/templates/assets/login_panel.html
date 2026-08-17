@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Logowanie - Inwentaryzacja{% endblock %}
+
+{% block content %}
+<div class="login-shell">
+    <div class="login-card">
+        <div class="login-header">
+            <span class="login-badge">System</span>
+            <h1>Logowanie</h1>
+            <p>Zaloguj się do panelu inwentaryzacji.</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="login-error">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" class="login-form">
+            {% csrf_token %}
+            <div class="form-group login-field">
+                <label for="username">Login</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group login-field">
+                <label for="password">Hasło</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit" class="primary-button login-button">Zaloguj się</button>
+        </form>
+
+        <div class="demo-credentials">
+            <p>Demo:</p>
+            <span>admin / admin123</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

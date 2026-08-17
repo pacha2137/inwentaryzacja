@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Panel użytkownika - Inwentaryzacja{% endblock %}
+
+{% block content %}
+<div class="page-header page-header-row">
+    <div>
+        <h1>Witaj, {{ request.user.get_full_name|default:request.user.username }}</h1>
+        <p>Twoje przypisane urządzenia i dostęp do zasobów.</p>
+    </div>
+</div>
+
+<div class="stats-grid single-stat">
+    <div class="stat-card accent-blue">
+        <span>Twoje urządzenia</span>
+        <strong>{{ total_assets }}</strong>
+    </div>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <h2>Przypisane urządzenia</h2>
+    </div>
+
+    {% if assigned_assets %}
+        <div class="table-container">
+            <table class="asset-table">
+                <thead>
+                    <tr>
+                        <th>Tag</th>
+                        <th>Producent</th>
+                        <th>Model</th>
+                        <th>Kategoria</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assigned_assets %}
+                    <tr>
+                        <td><a href="{% url 'asset_detail' asset.pk %}" class="asset-tag">{{ asset.tag }}</a></td>
+                        <td>{{ asset.manufacturer|default:'—' }}</td>
+                        <td>{{ asset.model|default:'—' }}</td>
+                        <td>{{ asset.category }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted-text">Nie masz przypisanego sprzętu.</p>
+    {% endif %}
+</div>
+{% endblock %}

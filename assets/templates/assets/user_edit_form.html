@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="detail-header">
+        <a href="{% url 'user_management_list' %}" class="back-link">← Wróć do listy</a>
+        <h1>{{ title }}</h1>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="login-error">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if password_form.non_field_errors %}
+        <div class="login-error">
+            {% for error in password_form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="detail-card" style="max-width: 600px;">
+        <h2>Dane użytkownika</h2>
+        <form method="post" class="asset-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Login</label>
+                <input type="text" value="{{ user_obj.username }}" disabled style="background: #f3f4f6; cursor: not-allowed;">
+                <small style="color: var(--muted);">Login nie może być zmieniony</small>
+            </div>
+
+            <div class="form-group">
+                <label for="id_email">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="form-error">
+                        {% for error in form.email.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_first_name">{{ form.first_name.label }}</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <div class="form-error">
+                        {% for error in form.first_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_last_name">{{ form.last_name.label }}</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <div class="form-error">
+                        {% for error in form.last_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--line); margin: 24px 0;">
+
+            <h2>Zmiana hasła (opcjonalne)</h2>
+            
+            <div class="form-group">
+                <label for="id_password">{{ password_form.password.label }}</label>
+                {{ password_form.password }}
+                {% if password_form.password.help_text %}
+                    <small style="color: var(--muted);">{{ password_form.password.help_text }}</small>
+                {% endif %}
+                {% if password_form.password.errors %}
+                    <div class="form-error">
+                        {% for error in password_form.password.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_password_confirm">{{ password_form.password_confirm.label }}</label>
+                {{ password_form.password_confirm }}
+                {% if password_form.password_confirm.errors %}
+                    <div class="form-error">
+                        {% for error in password_form.password_confirm.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'user_management_list' %}" class="cancel-button">Anuluj</a>
+                <button type="submit" class="primary-button">Zapisz zmiany</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

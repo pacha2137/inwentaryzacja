@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Panel administratora - Inwentaryzacja{% endblock %}
+
+{% block content %}
+<div class="page-header page-header-row">
+    <div>
+        <h1>Panel administratora</h1>
+        <p>Przegląd i zarządzanie inwentaryzacją.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{% url 'asset_create' %}" class="primary-button">+ Dodaj urządzenie</a>
+        <a href="{% url 'category_create' %}" class="primary-button">+ Dodaj kategorię</a>
+        <a href="{% url 'user_management_list' %}" class="primary-button">👥 Użytkownicy</a>
+        <a href="{% url 'permissions_panel' %}" class="cancel-button">Uprawnienia</a>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card accent-blue">
+        <span>Łącznie urządzeń</span>
+        <strong>{{ total_assets }}</strong>
+    </div>
+    <div class="stat-card accent-purple">
+        <span>Przypisanych</span>
+        <strong>{{ assigned_assets }}</strong>
+    </div>
+    <div class="stat-card accent-gold">
+        <span>Nieprzypisanych</span>
+        <strong>{{ unassigned_assets }}</strong>
+    </div>
+    <div class="stat-card accent-green">
+        <span>Kategorie</span>
+        <strong>{{ categories_count }}</strong>
+    </div>
+</div>
+
+<div class="panel-grid">
+    <section class="panel-card">
+        <div class="panel-header">
+            <h2>Marki sprzętu</h2>
+        </div>
+        <div class="chip-list">
+            {% for manufacturer in manufacturers %}
+                <span class="chip">{{ manufacturer }}</span>
+            {% empty %}
+                <span class="muted-text">Brak danych.</span>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="panel-card">
+        <div class="panel-header">
+            <h2>Ostatnie urządzenia</h2>
+        </div>
+        <div class="mini-list">
+            {% for asset in recent_assets %}
+                <a href="{% url 'asset_detail' asset.pk %}" class="mini-item">
+                    <div>
+                        <strong>{{ asset.tag }}</strong>
+                        <span>{{ asset.manufacturer|default:'Brak producenta' }} {{ asset.model|default:'' }}</span>
+                    </div>
+                    <small>{{ asset.category }}</small>
+                </a>
+            {% empty %}
+                <p class="muted-text">Brak urządzeń.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Dodaj kategorię - Inwentaryzacja{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dodaj kategorię</h1>
+</div>
+
+<div class="detail-card">
+    <form method="post" class="asset-form">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="form-error">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="form-actions">
+            <a href="{% url 'asset_list' %}" class="cancel-button">Anuluj</a>
+            <button type="submit" class="search-button">Zapisz</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

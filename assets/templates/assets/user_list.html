@@ -3,16 +3,13 @@
 {% block title %}Użytkownicy - Inwentaryzacja{% endblock %}
 
 {% block content %}
-
 <div class="page-header">
     <h1>Użytkownicy</h1>
-    <p>Lista użytkowników posiadających sprzęt</p>
+    <p>Lista osób odpowiedzialnych za sprzęt.</p>
 </div>
 
 <div class="table-container">
-
     <table class="asset-table">
-
         <thead>
             <tr>
                 <th>Użytkownik</th>
@@ -20,36 +17,15 @@
                 <th>Liczba sprzętu</th>
             </tr>
         </thead>
-
         <tbody>
-
             {% for user in users %}
-
             <tr>
-                <td>
-                    <a
-                        href="{% url 'user_detail' user.pk %}"
-                        class="asset-tag"
-                    >
-                        {{ user.get_full_name|default:user.username }}
-                    </a>
-                </td>
-
-                <td>
-                    {{ user.username }}
-                </td>
-
-                <td>
-                    {{ user.assets.count }}
-                </td>
+                <td><a href="{% url 'user_detail' user.pk %}" class="asset-tag">{{ user.get_full_name|default:user.username }}</a></td>
+                <td>{{ user.username }}</td>
+                <td><span class="status-pill status-ok">{{ user.assets.count }}</span></td>
             </tr>
-
             {% endfor %}
-
         </tbody>
-
     </table>
-
 </div>
-
 {% endblock %}

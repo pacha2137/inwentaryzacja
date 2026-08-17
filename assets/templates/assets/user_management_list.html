@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div>
+            <h1>Zarządzanie użytkownikami</h1>
+            <p>Dodawaj, edytuj i usuwaj konta użytkowników</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'user_create' %}" class="primary-button">+ Dodaj użytkownika</a>
+            <a href="{% url 'import_users' %}" class="primary-button">📥 Import CSV</a>
+            <a href="{% url 'export_users' %}" class="cancel-button">📥 Export CSV</a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="{% if message.tags %}{{ message.tags }}{% else %}success-message{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="table-container toolbar-card">
+        {% if users %}
+            <table class="asset-table">
+                <thead>
+                    <tr>
+                        <th>Login</th>
+                        <th>Email</th>
+                        <th>Imię i nazwisko</th>
+                        <th>Status</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td>
+                                <strong>{{ user.username }}</strong>
+                            </td>
+                            <td>{{ user.email|default:"—" }}</td>
+                            <td>
+                                {% if user.first_name or user.last_name %}
+                                    {{ user.first_name }} {{ user.last_name }}
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_superuser %}
+                                    <span class="status-pill status-ok">Superuser</span>
+                                {% elif user.is_staff %}
+                                    <span class="status-pill status-ok">Admin</span>
+                                {% else %}
+                                    <span class="status-pill status-warning">Użytkownik</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 8px;">
+                                    <a href="{% url 'user_edit' user.id %}" class="primary-button" style="font-size: 0.75rem; padding: 6px 10px;">Edytuj</a>
+                                    {% if user.id != request.user.id %}
+                                        <a href="{% url 'user_delete' user.id %}" class="primary-button" style="font-size: 0.75rem; padding: 6px 10px; background: #dc2626;">Usuń</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-message">
+                <p>Brak użytkowników.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

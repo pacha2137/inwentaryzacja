@@ -5,33 +5,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>{% block title %}Inwentaryzacja{% endblock %}</title>
-
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
 </head>
-
 <body>
+    <div class="bg-glow bg-glow-one"></div>
+    <div class="bg-glow bg-glow-two"></div>
 
-<nav class="navbar">
-    <div class="container navbar-content">
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'login' %}{% endif %}" class="logo-block">
+                <span class="logo-mark">I</span>
+                <span>Inventory</span>
+            </a>
 
-        <a href="{% url 'asset_list' %}" class="logo">
-            Inventory
-        </a>
+            {% if user.is_authenticated %}
+                <div class="nav-links tab-menu">
+                    <a href="{% url 'dashboard' %}" class="tab-link">Dashboard</a>
+                    <a href="{% url 'asset_list' %}" class="tab-link">Urządzenia</a>
+                    <a href="{% url 'user_list' %}" class="tab-link">Użytkownicy</a>
+                    {% if user.is_staff or user.is_superuser %}
+                        <a href="{% url 'permissions_panel' %}" class="tab-link">Uprawnienia</a>
+                    {% endif %}
+                </div>
+            {% endif %}
 
-        <div class="nav-links">
-            <a href="{% url 'asset_list' %}">Urządzenia</a>
-            <a href="{% url 'user_list' %}">Użytkownicy</a>
+            <div class="nav-actions">
+                {% if user.is_authenticated %}
+                    <span class="user-badge">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <a href="{% url 'logout' %}" class="logout-button">Wyloguj</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="logout-button">Zaloguj</a>
+                {% endif %}
+            </div>
         </div>
+    </nav>
 
-    </div>
-</nav>
-
-<main class="container">
-    {% block content %}
-    {% endblock %}
-</main>
-
+    <main class="container main-shell">
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>

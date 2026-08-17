@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Uprawnienia - Inwentaryzacja{% endblock %}
+
+{% block content %}
+<div class="page-header page-header-row">
+    <div>
+        <h1>Uprawnienia użytkowników</h1>
+        <p>Przydziel role i dostęp administratora.</p>
+    </div>
+</div>
+
+<div class="detail-card">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="success-message">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" class="asset-form">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="form-error">{{ field.errors|join:', ' }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="form-actions">
+            <a href="{% url 'dashboard' %}" class="cancel-button">Anuluj</a>
+            <button type="submit" class="primary-button">Zapisz uprawnienia</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
