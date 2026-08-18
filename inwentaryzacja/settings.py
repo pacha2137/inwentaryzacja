@@ -273,6 +273,7 @@ FILE_UPLOAD_ALLOWED_EXTENSIONS = ['csv', 'txt']
 
 # ===== AUTHENTICATION =====
 AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 

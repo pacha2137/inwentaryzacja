@@ -36,25 +36,24 @@ class InventoryAuthTests(TestCase):
         self.assertIn('next=/assets/', response.url)
 
     def test_user_can_login_and_access_assets(self):
-        login_response = self.client.login(username='admin', password='StrongPass123')
-        self.assertTrue(login_response)
+        self.client.force_login(self.admin)
         response = self.client.get(reverse('asset_list'))
         self.assertEqual(response.status_code, 200)
 
     def test_regular_user_cannot_access_asset_create(self):
-        self.client.login(username='regular', password='UserPass123')
+        self.client.force_login(self.user)
         response = self.client.get(reverse('asset_create'))
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('dashboard'))
 
     def test_admin_can_access_category_create(self):
-        self.client.login(username='admin', password='StrongPass123')
+        self.client.force_login(self.admin)
         response = self.client.get(reverse('category_create'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Nowy rodzaj')
 
     def test_admin_can_assign_asset_to_user(self):
-        self.client.login(username='admin', password='StrongPass123')
+        self.client.force_login(self.admin)
         category = Category.objects.create(name='Testowa kategoria')
         asset = Asset.objects.create(
             tag='ASSIGN-001',
@@ -77,7 +76,7 @@ class InventoryAuthTests(TestCase):
         self.assertTrue(ChangeHistory.objects.filter(action='assign', model_name='Asset').exists())
 
     def test_admin_can_remove_asset_assignment_from_user(self):
-        self.client.login(username='admin', password='StrongPass123')
+        self.client.force_login(self.admin)
         category = Category.objects.create(name='Testowa kategoria 2')
         asset = Asset.objects.create(
             tag='ASSIGN-REMOVE-001',
@@ -101,7 +100,7 @@ class InventoryAuthTests(TestCase):
         self.assertContains(response, 'Przypisanie sprzętu')
 
     def test_admin_can_access_change_history_page(self):
-        self.client.login(username='admin', password='StrongPass123')
+        self.client.force_login(self.admin)
         response = self.client.get(reverse('change_history'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Historia zmian')

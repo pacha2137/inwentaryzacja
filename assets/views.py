@@ -521,6 +521,17 @@ def user_edit(request, id):
         form = UserEditForm(request.POST, instance=user)
         password_form = UserPasswordForm(request.POST)
         
+        # Sprawdzenie czy admin próbuje odebrać sobie uprawnień
+        if request.user.id == user.id:
+            if (request.POST.get('is_staff') != '1' and old_is_staff) or (request.POST.get('is_superuser') != '1' and old_is_superuser):
+                messages.error(request, 'Nie możesz odebrać sobie uprawnień administratora!')
+                return render(request, 'assets/user_edit_form.html', {
+                    'form': form,
+                    'password_form': password_form,
+                    'user_obj': user,
+                    'title': f'Edytuj pracownika: {user.username}',
+                })
+        
         if form.is_valid() and password_form.is_valid():
             form.save()
             
