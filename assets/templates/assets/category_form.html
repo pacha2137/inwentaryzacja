@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 
-{% block title %}Dodaj kategorię - Inwentaryzacja{% endblock %}
+{% block title %}{% if is_edit %}Edytuj rodzaj{% else %}Nowy rodzaj{% endif %} - Inwentaryzacja{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>Dodaj kategorię</h1>
+    <h1>{% if is_edit %}Edytuj rodzaj: {{ category.name }}{% else %}Nowy rodzaj{% endif %}</h1>
 </div>
 
 <div class="detail-card">

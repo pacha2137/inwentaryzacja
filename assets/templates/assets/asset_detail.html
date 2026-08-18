@@ -5,33 +5,39 @@
 {% block content %}
 <div class="detail-header">
     <div>
-        <a href="{% url 'asset_list' %}" class="back-link">← Powrót do sprzętu</a>
+        <a href="{% url 'asset_list' %}" class="back-link">← Powrót do urządzeń</a>
         <h1>{{ asset.manufacturer|default:'Urządzenie' }} {{ asset.model|default:'' }}</h1>
         <p>{{ asset.category }}</p>
     </div>
+    {% if user.is_staff or user.is_superuser %}
+        <div class="action-buttons">
+            <a href="{% url 'edit_asset' asset.id %}" class="edit-button">✏️ Edytuj</a>
+            <a href="{% url 'delete_asset' asset.id %}" class="delete-button">🗑️ Usuń</a>
+        </div>
+    {% endif %}
 </div>
 
 <div class="detail-card">
-    <h2>Informacje o urządzeniu</h2>
+    <h2>Szczegóły urządzenia</h2>
     <div class="detail-grid">
-        <div class="detail-item"><span>Tag</span><strong>{{ asset.tag }}</strong></div>
+        <div class="detail-item"><span>Identyfikator</span><strong>{{ asset.tag }}</strong></div>
         <div class="detail-item"><span>Numer seryjny</span><strong>{{ asset.serial_number|default:'—' }}</strong></div>
         <div class="detail-item"><span>Producent</span><strong>{{ asset.manufacturer|default:'—' }}</strong></div>
         <div class="detail-item"><span>Model</span><strong>{{ asset.model|default:'—' }}</strong></div>
-        <div class="detail-item"><span>Kategoria</span><strong>{{ asset.category }}</strong></div>
+        <div class="detail-item"><span>Rodzaj</span><strong>{{ asset.category }}</strong></div>
         <div class="detail-item"><span>Status</span><strong>{% if asset.assigned_to %}Przypisane{% else %}Wolne{% endif %}</strong></div>
     </div>
 </div>
 
 <div class="detail-card">
-    <h2>Użytkownik</h2>
+    <h2>Przypisano do</h2>
     {% if asset.assigned_to %}
         <a href="{% url 'user_detail' asset.assigned_to.pk %}" class="user-link">
             <strong>{{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}</strong>
             <span>{{ asset.assigned_to.username }}</span>
         </a>
     {% else %}
-        <p class="muted">Sprzęt nie jest przypisany do użytkownika.</p>
+        <p class="muted">Urządzenie nie jest przypisane do pracownika.</p>
     {% endif %}
 </div>
 {% endblock %}

@@ -4,13 +4,11 @@
 <div class="container">
     <div class="page-header">
         <div>
-            <h1>Zarządzanie użytkownikami</h1>
-            <p>Dodawaj, edytuj i usuwaj konta użytkowników</p>
+            <h1>Zarządzanie pracownikami</h1>
+            <p>Dodawaj, edytuj i usuwaj konta pracowników</p>
         </div>
         <div class="header-actions">
-            <a href="{% url 'user_create' %}" class="primary-button">+ Dodaj użytkownika</a>
-            <a href="{% url 'import_users' %}" class="primary-button">📥 Import CSV</a>
-            <a href="{% url 'export_users' %}" class="cancel-button">📥 Export CSV</a>
+            <a href="{% url 'user_create' %}" class="primary-button">+ Nowy pracownik</a>
         </div>
     </div>
 
@@ -27,10 +25,10 @@
             <table class="asset-table">
                 <thead>
                     <tr>
-                        <th>Login</th>
+                        <th>Konto</th>
                         <th>Email</th>
                         <th>Imię i nazwisko</th>
-                        <th>Status</th>
+                        <th>Rola</th>
                         <th>Akcje</th>
                     </tr>
                 </thead>
@@ -50,11 +48,11 @@
                             </td>
                             <td>
                                 {% if user.is_superuser %}
-                                    <span class="status-pill status-ok">Superuser</span>
+                                    <span class="status-pill status-ok">Administrator systemu</span>
                                 {% elif user.is_staff %}
-                                    <span class="status-pill status-ok">Admin</span>
+                                    <span class="status-pill status-ok">Administrator</span>
                                 {% else %}
-                                    <span class="status-pill status-warning">Użytkownik</span>
+                                    <span class="status-pill status-warning">Pracownik</span>
                                 {% endif %}
                             </td>
                             <td>
@@ -71,7 +69,7 @@
             </table>
         {% else %}
             <div class="empty-message">
-                <p>Brak użytkowników.</p>
+                <p>Brak pracowników.</p>
             </div>
         {% endif %}
     </div>

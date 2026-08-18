@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container">
     <div class="detail-header">
-        <a href="{% url 'user_management_list' %}" class="back-link">← Wróć do listy</a>
+        <a href="{% url 'user_management_list' %}" class="back-link">← Wróć do zarządzania</a>
         <h1>{{ title }}</h1>
     </div>
 
@@ -24,14 +24,14 @@
     {% endif %}
 
     <div class="detail-card" style="max-width: 600px;">
-        <h2>Dane użytkownika</h2>
+        <h2>Dane pracownika</h2>
         <form method="post" class="asset-form">
             {% csrf_token %}
             
             <div class="form-group">
-                <label>Login</label>
+                <label>Konto</label>
                 <input type="text" value="{{ user_obj.username }}" disabled style="background: #f3f4f6; cursor: not-allowed;">
-                <small style="color: var(--muted);">Login nie może być zmieniony</small>
+                <small style="color: var(--muted);">Konto nie może być zmieniane</small>
             </div>
 
             <div class="form-group">
@@ -64,6 +64,44 @@
                 {% if form.last_name.errors %}
                     <div class="form-error">
                         {% for error in form.last_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--line); margin: 24px 0;">
+
+            <h2>Uprawnienia</h2>
+            
+            <div class="form-group checkbox-group">
+                <label for="id_is_staff">
+                    {{ form.is_staff }}
+                    <span>{{ form.is_staff.label }}</span>
+                </label>
+                {% if form.is_staff.help_text %}
+                    <small style="color: var(--muted); display: block; margin-top: 4px;">{{ form.is_staff.help_text }}</small>
+                {% endif %}
+                {% if form.is_staff.errors %}
+                    <div class="form-error">
+                        {% for error in form.is_staff.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group checkbox-group">
+                <label for="id_is_superuser">
+                    {{ form.is_superuser }}
+                    <span>{{ form.is_superuser.label }}</span>
+                </label>
+                {% if form.is_superuser.help_text %}
+                    <small style="color: var(--muted); display: block; margin-top: 4px;">{{ form.is_superuser.help_text }}</small>
+                {% endif %}
+                {% if form.is_superuser.errors %}
+                    <div class="form-error">
+                        {% for error in form.is_superuser.errors %}
                             {{ error }}
                         {% endfor %}
                     </div>

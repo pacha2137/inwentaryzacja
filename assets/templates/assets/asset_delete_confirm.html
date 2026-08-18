@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuń urządzenie - Inwentaryzacja{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <a href="{% url 'asset_detail' asset.id %}" class="back-link">← Powrót do urządzenia</a>
+    <h1>Usuń urządzenie</h1>
+</div>
+
+<div class="detail-card">
+    <div class="delete-warning">
+        <p><strong>Czy na pewno chcesz usunąć to urządzenie?</strong></p>
+        <p>Ta operacja jest nieodwracalna.</p>
+    </div>
+
+    <div class="detail-grid">
+        <div class="detail-item"><span>Identyfikator</span><strong>{{ asset.tag }}</strong></div>
+        <div class="detail-item"><span>Producent</span><strong>{{ asset.manufacturer|default:'—' }}</strong></div>
+        <div class="detail-item"><span>Model</span><strong>{{ asset.model|default:'—' }}</strong></div>
+        <div class="detail-item"><span>Rodzaj</span><strong>{{ asset.category }}</strong></div>
+    </div>
+
+    <form method="post" class="delete-form">
+        {% csrf_token %}
+        <div class="form-actions">
+            <a href="{% url 'asset_detail' asset.id %}" class="cancel-button">
+                Anuluj
+            </a>
+            <button type="submit" class="delete-button">
+                Tak, usuń urządzenie
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuń rodzaj - Inwentaryzacja{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Usuń rodzaj</h1>
+</div>
+
+<div class="detail-card delete-confirm">
+    <div class="delete-warning">
+        <h2>Czy na pewno chcesz usunąć rodzaj?</h2>
+        <p><strong>{{ category.name }}</strong></p>
+        <p class="muted-text">Tej operacji nie można cofnąć.</p>
+    </div>
+
+    <form method="post" class="delete-form">
+        {% csrf_token %}
+        <div class="form-actions">
+            <a href="{% url 'asset_list' %}" class="cancel-button">Anuluj</a>
+            <button type="submit" class="delete-button">Usuń rodzaj</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

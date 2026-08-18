@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}500 - Błąd serwera - Inwentaryzacja{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; padding: 40px 20px;">
+        <div style="text-align: center;">
+            <div style="font-size: 120px; font-weight: 800; color: #dc2626; line-height: 1; margin-bottom: 20px;">
+                500
+            </div>
+            <h1 style="font-size: 2rem; color: var(--text); margin-bottom: 16px;">Wewnętrzny błąd serwera</h1>
+            <p style="color: var(--muted); font-size: 1.1rem; margin-bottom: 30px; line-height: 1.6;">
+                Coś poszło nie tak. Nasi administratorzy zostali powiadomieni o tym błędzie.<br>
+                Spróbuj ponownie za chwilę.
+            </p>
+            <a href="{% url 'dashboard' %}" class="primary-button">
+                ← Wróć do panelu
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

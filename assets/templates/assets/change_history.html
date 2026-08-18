@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Historia zmian - Inwentaryzacja{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Historia zmian</h1>
+        <p>Ostatnie działania wykonane w systemie.</p>
+    </div>
+</div>
+
+<div class="detail-card">
+    {% if entries %}
+        <div class="history-list">
+            {% for entry in entries %}
+                <div class="history-item">
+                    <div class="history-meta">
+                        <span class="history-pill history-{{ entry.action }}">{{ entry.get_action_display }}</span>
+                        <span class="history-time">{{ entry.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <p>{{ entry.description }}</p>
+                    <small>
+                        {% if entry.user %}
+                            {{ entry.user.get_full_name|default:entry.user.username }}
+                        {% else %}
+                            System
+                        {% endif %}
+                    </small>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="muted">Brak wpisów w historii zmian.</p>
+    {% endif %}
+</div>
+{% endblock %}

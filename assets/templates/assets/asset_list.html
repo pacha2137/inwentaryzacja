@@ -6,25 +6,25 @@
 <div class="page-header page-header-row">
     <div>
         <h1>Urządzenia</h1>
-        <p>Lista wszystkich aktywów w ewidencji.</p>
+        <p>Lista wszystkich urządzeń w ewidencji.</p>
     </div>
     <div class="header-actions">
         {% if user.is_staff or user.is_superuser %}
-            <a href="{% url 'asset_create' %}" class="primary-button">+ Dodaj urządzenie</a>
-            <a href="{% url 'category_create' %}" class="primary-button">+ Dodaj kategorię</a>
+            <a href="{% url 'asset_create' %}" class="primary-button">+ Nowe urządzenie</a>
+            <a href="{% url 'category_create' %}" class="primary-button">+ Nowy rodzaj</a>
         {% endif %}
-        <a href="{% url 'import_assets' %}" class="primary-button">📥 Import CSV</a>
-        <a href="{% url 'export_assets' %}" class="cancel-button">📥 Export CSV</a>
+        <a href="{% url 'import_assets' %}" class="primary-button">📥 Importuj</a>
+        <a href="{% url 'export_assets' %}" class="cancel-button">📤 Eksportuj</a>
     </div>
 </div>
 
 <div class="toolbar-card">
     <form method="get" class="search-form">
         <div class="search-wrap">
-            <input type="text" name="q" value="{{ query }}" placeholder="Szukaj po tagu, modelu, użytkowniku..." class="search-input">
+            <input type="text" name="q" value="{{ query }}" placeholder="Szukaj po tagu, modelu, pracowniku..." class="search-input">
         </div>
         <select name="mark" class="select-input">
-            <option value="">Wszystkie marki</option>
+            <option value="">Wszyscy producenci</option>
             {% for brand in brands %}
                 <option value="{{ brand }}" {% if selected_mark == brand %}selected{% endif %}>{{ brand }}</option>
             {% endfor %}
@@ -37,12 +37,12 @@
     <table class="asset-table">
         <thead>
             <tr>
-                <th>Tag</th>
-                <th>Kategoria</th>
+                <th>Identyfikator</th>
+                <th>Rodzaj</th>
                 <th>Producent</th>
                 <th>Model</th>
                 <th>Numer seryjny</th>
-                <th>Użytkownik</th>
+                <th>Pracownik</th>
             </tr>
         </thead>
         <tbody>
@@ -57,13 +57,13 @@
                     {% if asset.assigned_to %}
                         {{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}
                     {% else %}
-                        <span class="status-pill status-warning">Brak przypisania</span>
+                        <span class="status-pill status-warning">Bez przypisania</span>
                     {% endif %}
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" class="empty-message">Brak sprzętu spełniającego kryteria wyszukiwania.</td>
+                <td colspan="6" class="empty-message">Brak urządzeń spełniających kryteria wyszukiwania.</td>
             </tr>
             {% endfor %}
         </tbody>

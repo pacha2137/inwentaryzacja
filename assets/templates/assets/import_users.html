@@ -3,8 +3,8 @@
 {% block content %}
 <div class="container">
     <div class="detail-header">
-        <a href="{% url 'user_management_list' %}" class="back-link">← Wróć do listy</a>
-        <h1>Importuj użytkowników z CSV</h1>
+        <a href="{% url 'user_management_list' %}" class="back-link">← Wróć do zarządzania</a>
+        <h1>Importuj pracowników</h1>
     </div>
 
     {% if form.non_field_errors %}
@@ -50,8 +50,8 @@ jane.smith,jane@example.com,Jane,Smith,AnotherPass456
 
         <div style="background: #e0e7ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 12px; margin-top: 20px;">
             <p style="color: #3730a3; margin: 0; font-size: 0.9rem;">
-                <strong>💡 Wskazówka:</strong> USERNAME musi być unikatowy i nie może już istnieć w systemie. 
-                PASSWORD będzie ustawiony podczas importu - użytkownik powinien go zmienić przy pierwszym logowaniu.
+                <strong>💡 Wskazówka:</strong> Konto musi być unikatowe i nie może już istnieć w systemie. 
+                Hasło będzie ustawione podczas importu - pracownik powinien je zmienić przy pierwszym logowaniu.
             </p>
         </div>
     </div>

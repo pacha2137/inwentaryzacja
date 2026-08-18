@@ -5,20 +5,19 @@
 {% block content %}
 <div class="page-header page-header-row">
     <div>
-        <h1>Panel administratora</h1>
-        <p>Przegląd i zarządzanie inwentaryzacją.</p>
+        <h1>Przegląd systemu</h1>
+        <p>Statystyka i zarządzanie inwentaryzacją.</p>
     </div>
     <div class="header-actions">
         <a href="{% url 'asset_create' %}" class="primary-button">+ Dodaj urządzenie</a>
-        <a href="{% url 'category_create' %}" class="primary-button">+ Dodaj kategorię</a>
-        <a href="{% url 'user_management_list' %}" class="primary-button">👥 Użytkownicy</a>
-        <a href="{% url 'permissions_panel' %}" class="cancel-button">Uprawnienia</a>
+        <a href="{% url 'category_create' %}" class="primary-button">+ Nowy rodzaj</a>
+        <a href="{% url 'user_management_list' %}" class="primary-button">👥 Zarządzanie</a>
     </div>
 </div>
 
 <div class="stats-grid">
     <div class="stat-card accent-blue">
-        <span>Łącznie urządzeń</span>
+        <span>Wszystkich urządzeń</span>
         <strong>{{ total_assets }}</strong>
     </div>
     <div class="stat-card accent-purple">
@@ -26,19 +25,19 @@
         <strong>{{ assigned_assets }}</strong>
     </div>
     <div class="stat-card accent-gold">
-        <span>Nieprzypisanych</span>
+        <span>Wolnych</span>
         <strong>{{ unassigned_assets }}</strong>
     </div>
     <div class="stat-card accent-green">
-        <span>Kategorie</span>
-        <strong>{{ categories_count }}</strong>
+        <span>Pracownicy</span>
+        <strong>{{ users_count }}</strong>
     </div>
 </div>
 
 <div class="panel-grid">
     <section class="panel-card">
         <div class="panel-header">
-            <h2>Marki sprzętu</h2>
+            <h2>Producenci</h2>
         </div>
         <div class="chip-list">
             {% for manufacturer in manufacturers %}
@@ -51,7 +50,7 @@
 
     <section class="panel-card">
         <div class="panel-header">
-            <h2>Ostatnie urządzenia</h2>
+            <h2>Ostatnio dodane</h2>
         </div>
         <div class="mini-list">
             {% for asset in recent_assets %}
@@ -64,6 +63,27 @@
                 </a>
             {% empty %}
                 <p class="muted-text">Brak urządzeń.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="panel-card">
+        <div class="panel-header">
+            <h2>Rodzaje urządzeń</h2>
+        </div>
+        <div class="mini-list">
+            {% for category in all_categories %}
+                <div class="mini-item category-item">
+                    <div>
+                        <strong>{{ category.name }}</strong>
+                    </div>
+                    <div class="item-actions">
+                        <a href="{% url 'category_edit' category.pk %}" class="edit-link">Edytuj</a>
+                        <a href="{% url 'category_delete' category.pk %}" class="delete-link">Usuń</a>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="muted-text">Brak kategorii.</p>
             {% endfor %}
         </div>
     </section>

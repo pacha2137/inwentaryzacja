@@ -29,10 +29,10 @@ DATA_DIR.mkdir(exist_ok=True)
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG_VALUE = os.getenv('DEBUG', 'False').strip().lower()
-DEBUG = DEBUG_VALUE not in {'0', 'false', 'no', 'off', ''}
 
-ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',') if host.strip()]
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'axes',
     'assets',
 ]
 
@@ -59,6 +60,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'inwentaryzacja.middleware.RateLimitMiddleware',
@@ -132,9 +134,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'assets' / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+STATICFILES_DIRS = [
+    BASE_DIR / 'assets' / 'static',
+]
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
@@ -265,6 +270,17 @@ LOGS_DIR.mkdir(exist_ok=True)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
 FILE_UPLOAD_ALLOWED_EXTENSIONS = ['csv', 'txt']
+
+# ===== AUTHENTICATION =====
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# ===== RATE LIMITING (django-axes) =====
+AXES_FAILURE_LIMIT = 5  # Max failed login attempts
+AXES_COOLOFF_DURATION = 30  # minutes
+AXES_LOCK_OUT_AT_FAILURE = True
+AXES_VERBOSE = True
 
 # Custom error handlers
 if not DEBUG:

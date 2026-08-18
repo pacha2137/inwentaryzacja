@@ -8,7 +8,7 @@ class CategoryForm(forms.ModelForm):
         model = Category
         fields = ['name']
         labels = {
-            'name': 'Nazwa kategorii',
+            'name': 'Nazwa rodzaju',
         }
 
     def clean_name(self):
@@ -32,7 +32,7 @@ class Asset_form(forms.ModelForm):
 
 
 class UserPermissionForm(forms.Form):
-    user = forms.ModelChoiceField(queryset=User.objects.none(), label='Użytkownik')
+    user = forms.ModelChoiceField(queryset=User.objects.none(), label='Pracownik')
     is_staff = forms.BooleanField(required=False, label='Czy ma dostęp administratora')
     is_superuser = forms.BooleanField(required=False, label='Czy ma pełne uprawnienia')
     groups = forms.ModelMultipleChoiceField(
@@ -47,11 +47,31 @@ class UserPermissionForm(forms.Form):
         self.fields['user'].queryset = User.objects.order_by('username')
 
 
+class AssignAssetForm(forms.Form):
+    asset = forms.ModelChoiceField(
+        queryset=Asset.objects.none(),
+        label='Sprzęt',
+        empty_label='Wybierz sprzęt',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['asset'].queryset = Asset.objects.select_related('category', 'assigned_to').order_by('tag')
+        self.fields['asset'].widget.attrs.update({'class': 'select-input'})
+
+        def label_from_instance(obj):
+            manufacturer = obj.manufacturer.strip() if obj.manufacturer else 'Brak producenta'
+            model = obj.model.strip() if obj.model else 'Brak modelu'
+            return f'{obj.tag} — {manufacturer} {model}'
+
+        self.fields['asset'].label_from_instance = label_from_instance
+
+
 class UserCreateForm(forms.ModelForm):
     password = forms.CharField(
         widget=forms.PasswordInput,
         label='Hasło',
-        help_text='Wprowadź hasło dla nowego użytkownika'
+        help_text='Wprowadź hasło dla nowego pracownika'
     )
     password_confirm = forms.CharField(
         widget=forms.PasswordInput,
@@ -62,7 +82,7 @@ class UserCreateForm(forms.ModelForm):
         model = User
         fields = ['username', 'email', 'first_name', 'last_name']
         labels = {
-            'username': 'Login',
+            'username': 'Konto',
             'email': 'Email',
             'first_name': 'Imię',
             'last_name': 'Nazwisko',
@@ -80,9 +100,20 @@ class UserCreateForm(forms.ModelForm):
 
 
 class UserEditForm(forms.ModelForm):
+    is_staff = forms.BooleanField(
+        required=False,
+        label='Dostęp administratora',
+        help_text='Pracownik może edytować inne konta i zarządzać sprzętem',
+    )
+    is_superuser = forms.BooleanField(
+        required=False,
+        label='Pełne uprawnienia',
+        help_text='Pracownik ma dostęp do wszystkich funkcji systemu',
+    )
+    
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name']
+        fields = ['email', 'first_name', 'last_name', 'is_staff', 'is_superuser']
         labels = {
             'email': 'Email',
             'first_name': 'Imię',

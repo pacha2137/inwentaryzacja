@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}404 - Strona nie znaleziona - Inwentaryzacja{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; padding: 40px 20px;">
+        <div style="text-align: center;">
+            <div style="font-size: 120px; font-weight: 800; color: #2563eb; line-height: 1; margin-bottom: 20px;">
+                404
+            </div>
+            <h1 style="font-size: 2rem; color: var(--text); margin-bottom: 16px;">Strona nie znaleziona</h1>
+            <p style="color: var(--muted); font-size: 1.1rem; margin-bottom: 30px; line-height: 1.6;">
+                Przepraszamy, ale poszukiwana strona nie istnieje.<br>
+                Może być usunięta lub adres URL jest nieprawidłowy.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <a href="{% url 'dashboard' %}" class="primary-button">
+                    ← Wróć do panelu
+                </a>
+                <a href="{% url 'asset_list' %}" class="search-button">
+                    Przejdź do urządzeń
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -4,17 +4,59 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import models
 from django.shortcuts import redirect, render
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.core.cache import cache
 from django.views.decorators.http import require_http_methods
 import csv
 import io
 import logging
+from pathlib import Path
 
-from .forms import Asset_form, UserPermissionForm, UserCreateForm, UserEditForm, UserPasswordForm, AssetImportForm, UserImportForm, CategoryForm
-from .models import Asset, Category
+from .forms import Asset_form, UserPermissionForm, AssignAssetForm, UserCreateForm, UserEditForm, UserPasswordForm, AssetImportForm, UserImportForm, CategoryForm
+from .models import Asset, Category, ChangeHistory, SecurityLog
 
 logger = logging.getLogger(__name__)
+security_logger = logging.getLogger('django.security')
+
+
+def serve_style_css(request):
+    """Serve the style.css file directly."""
+    css_path = Path(__file__).resolve().parent / 'static' / 'assets' / 'css' / 'style.css'
+    if css_path.exists():
+        return FileResponse(open(css_path, 'rb'), content_type='text/css')
+    return HttpResponse("CSS file not found", status=404)
+
+
+def log_change(request, action, model_name, object_name='', object_id=None, description=None):
+    """Create a system change log entry."""
+    if description is None:
+        description = f'{model_name} "{object_name}"'
+
+    ChangeHistory.objects.create(
+        user=request.user if getattr(request, 'user', None) and request.user.is_authenticated else None,
+        action=action,
+        model_name=model_name,
+        object_name=object_name,
+        object_id=object_id,
+        description=description,
+    )
+
+
+def log_security_event(request, event_type, description, user=None):
+    """Log security events for audit trail."""
+    ip_address = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:500]
+    
+    SecurityLog.objects.create(
+        user=user or (request.user if request.user.is_authenticated else None),
+        event_type=event_type,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        description=description,
+    )
+    
+    # Log to security logger as well
+    security_logger.warning(f'[{event_type}] {description} - IP: {ip_address}')
 
 
 def get_client_ip(request):
@@ -40,6 +82,7 @@ def login_view(request):
 
         if attempts >= 5:
             logger.warning(f'Blocked login attempts from IP: {ip} (attempt {attempts + 1})')
+            log_security_event(request, 'login_locked', f'Wiele nieudanych prób logowania z IP: {ip}')
             messages.error(request, 'Zbyt wiele nieudanych prób. Spróbuj za 15 minut.')
             return render(request, 'assets/login_panel.html')
 
@@ -58,11 +101,13 @@ def login_view(request):
             cache.delete(cache_key)
             login(request, user)
             logger.info(f'Successful login for user: {username}')
+            log_security_event(request, 'login_success', f'Pomyślne logowanie użytkownika: {username}', user)
             return redirect('dashboard')
 
         # Increment failed attempts
         cache.set(cache_key, attempts + 1, 900)  # 15 minutes = 900 seconds
         logger.warning(f'Failed login attempt for user: {username} from IP: {ip}')
+        log_security_event(request, 'login_failure', f'Nieudana próba logowania dla: {username}')
         messages.error(request, 'Nieprawidłowy login lub hasło.')
 
     return render(request, 'assets/login_panel.html')
@@ -80,19 +125,21 @@ def dashboard(request):
         total_assets = assets.count()
         assigned_assets = assets.filter(assigned_to__isnull=False).count()
         unassigned_assets = total_assets - assigned_assets
-        categories_count = assets.values_list('category_id', flat=True).distinct().count()
+        users_count = User.objects.count()
         manufacturers = [
             item['manufacturer']
             for item in assets.exclude(manufacturer='').values('manufacturer').distinct().order_by('manufacturer')
         ]
+        all_categories = Category.objects.all().order_by('name')
         recent_assets = assets.order_by('-id')[:5]
 
         return render(request, 'assets/dashboard_admin.html', {
             'total_assets': total_assets,
             'assigned_assets': assigned_assets,
             'unassigned_assets': unassigned_assets,
-            'categories_count': categories_count,
+            'users_count': users_count,
             'manufacturers': manufacturers,
+            'all_categories': all_categories,
             'recent_assets': recent_assets,
         })
 
@@ -101,6 +148,15 @@ def dashboard(request):
         'assigned_assets': assets,
         'total_assets': assets.count(),
     })
+
+
+@login_required
+def change_history(request):
+    if not (request.user.is_staff or request.user.is_superuser):
+        return redirect('dashboard')
+
+    entries = ChangeHistory.objects.select_related('user').all()
+    return render(request, 'assets/change_history.html', {'entries': entries})
 
 
 @login_required
@@ -167,10 +223,56 @@ def asset_detail(request, id):
 def user_detail(request, id):
     user = User.objects.get(id=id)
     assets = user.assets.select_related('category').all()
+    assign_form = None
+    assignable_assets = []
+
+    if request.user.is_staff or request.user.is_superuser:
+        assignable_assets = Asset.objects.filter(assigned_to__isnull=True).select_related('category', 'assigned_to').order_by('tag')
+
+        if request.method == 'POST':
+            if 'assign_asset' in request.POST:
+                assign_form = AssignAssetForm(request.POST)
+                assign_form.fields['asset'].queryset = assignable_assets
+                if assign_form.is_valid():
+                    asset = assign_form.cleaned_data['asset']
+                    asset.assigned_to = user
+                    asset.save(update_fields=['assigned_to'])
+                    log_change(
+                        request,
+                        'assign',
+                        'Asset',
+                        asset.tag,
+                        asset.pk,
+                        f'Przypisano sprzęt {asset.tag} do {user.get_full_name() or user.username}.'
+                    )
+                    messages.success(request, f'Sprzęt {asset.tag} został przypisany do {user.get_full_name() or user.username}.')
+                    return redirect('user_detail', id=user.id)
+            elif 'remove_asset' in request.POST:
+                asset_id = request.POST.get('asset_id')
+                if asset_id:
+                    asset = Asset.objects.filter(id=asset_id, assigned_to=user).first()
+                    if asset:
+                        asset.assigned_to = None
+                        asset.save(update_fields=['assigned_to'])
+                        log_change(
+                            request,
+                            'update',
+                            'Asset',
+                            asset.tag,
+                            asset.pk,
+                            f'Usunięto przypisanie sprzętu {asset.tag} z pracownika {user.get_full_name() or user.username}.'
+                        )
+                        messages.success(request, f'Przypisanie sprzętu {asset.tag} zostało usunięte.')
+                        return redirect('user_detail', id=user.id)
+
+        assign_form = AssignAssetForm()
+        assign_form.fields['asset'].queryset = assignable_assets
 
     return render(request, 'assets/user_detail.html', {
         'user': user,
         'assets': assets,
+        'assign_form': assign_form,
+        'assignable_assets': assignable_assets,
     })
 
 def user_list(request):
@@ -190,7 +292,15 @@ def add_asset(request):
         form = Asset_form(request.POST)
 
         if form.is_valid():
-            form.save()
+            asset = form.save()
+            log_change(
+                request,
+                'create',
+                'Asset',
+                asset.tag,
+                asset.pk,
+                f'Utworzono urządzenie {asset.tag}.'
+            )
             messages.success(request, 'Urządzenie zostało dodane.')
             return redirect('asset_list')
     else:
@@ -198,6 +308,65 @@ def add_asset(request):
 
     return render(request, 'assets/asset_form.html', {
         'form': form,
+    })
+
+
+@login_required
+def edit_asset(request, id):
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Nie masz uprawnień do edycji urządzeń.')
+        return redirect('dashboard')
+
+    asset = Asset.objects.get(id=id)
+
+    if request.method == 'POST':
+        form = Asset_form(request.POST, instance=asset)
+        if form.is_valid():
+            asset = form.save()
+            log_change(
+                request,
+                'update',
+                'Asset',
+                asset.tag,
+                asset.pk,
+                f'Edytowano urządzenie {asset.tag}.'
+            )
+            messages.success(request, 'Urządzenie zostało zaktualizowane.')
+            return redirect('asset_detail', id=asset.pk)
+    else:
+        form = Asset_form(instance=asset)
+
+    return render(request, 'assets/asset_form.html', {
+        'form': form,
+        'asset': asset,
+        'is_edit': True,
+    })
+
+
+@login_required
+def delete_asset(request, id):
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Nie masz uprawnień do usuwania urządzeń.')
+        return redirect('dashboard')
+
+    asset = Asset.objects.get(id=id)
+
+    if request.method == 'POST':
+        asset_tag = asset.tag
+        log_change(
+            request,
+            'delete',
+            'Asset',
+            asset_tag,
+            asset.pk,
+            f'Usunięto urządzenie {asset_tag}.'
+        )
+        asset.delete()
+        messages.success(request, 'Urządzenie zostało usunięte.')
+        return redirect('asset_list')
+
+    return render(request, 'assets/asset_delete_confirm.html', {
+        'asset': asset,
     })
 
 
@@ -210,7 +379,15 @@ def category_create(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
         if form.is_valid():
-            form.save()
+            category = form.save()
+            log_change(
+                request,
+                'create',
+                'Category',
+                category.name,
+                category.pk,
+                f'Utworzono kategorię {category.name}.'
+            )
             messages.success(request, 'Kategoria została dodana.')
             return redirect('asset_list')
     else:
@@ -222,8 +399,67 @@ def category_create(request):
 
 
 @login_required
+def category_edit(request, id):
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Nie masz uprawnień do zarządzania kategoriami.')
+        return redirect('dashboard')
+
+    category = Category.objects.get(id=id)
+
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            category = form.save()
+            log_change(
+                request,
+                'update',
+                'Category',
+                category.name,
+                category.pk,
+                f'Edytowano kategorię {category.name}.'
+            )
+            messages.success(request, 'Kategoria została zaktualizowana.')
+            return redirect('asset_list')
+    else:
+        form = CategoryForm(instance=category)
+
+    return render(request, 'assets/category_form.html', {
+        'form': form,
+        'category': category,
+        'is_edit': True,
+    })
+
+
+@login_required
+def category_delete(request, id):
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Nie masz uprawnień do zarządzania kategoriami.')
+        return redirect('dashboard')
+
+    category = Category.objects.get(id=id)
+
+    if request.method == 'POST':
+        category_name = category.name
+        log_change(
+            request,
+            'delete',
+            'Category',
+            category_name,
+            category.pk,
+            f'Usunięto kategorię {category_name}.'
+        )
+        category.delete()
+        messages.success(request, 'Kategoria została usunięta.')
+        return redirect('asset_list')
+
+    return render(request, 'assets/category_delete_confirm.html', {
+        'category': category,
+    })
+
+
+@login_required
 def user_management_list(request):
-    """Lista wszystkich użytkowników dla admina"""
+    """Lista wszystkich pracowników dla admina"""
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect('dashboard')
     
@@ -235,7 +471,7 @@ def user_management_list(request):
 
 @login_required
 def user_create(request):
-    """Dodaj nowego użytkownika"""
+    """Dodaj nowego pracownika"""
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect('dashboard')
     
@@ -245,25 +481,41 @@ def user_create(request):
             user = form.save(commit=False)
             user.set_password(form.cleaned_data['password'])
             user.save()
-            messages.success(request, f'Użytkownik {user.username} został utworzony.')
+            log_change(
+                request,
+                'create',
+                'Pracownik',
+                user.username,
+                user.pk,
+                f'Utworzono pracownika {user.username}.'
+            )
+            log_security_event(
+                request,
+                'user_created',
+                f'Utworzono nowego użytkownika: {user.username}',
+                user
+            )
+            messages.success(request, f'Pracownik {user.username} został utworzony.')
             return redirect('user_management_list')
     else:
         form = UserCreateForm()
     
     return render(request, 'assets/user_form.html', {
         'form': form,
-        'title': 'Dodaj nowego użytkownika',
+        'title': 'Dodaj nowego pracownika',
         'action': 'create',
     })
 
 
 @login_required
 def user_edit(request, id):
-    """Edytuj użytkownika"""
+    """Edytuj pracownika"""
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect('dashboard')
     
     user = User.objects.get(id=id)
+    old_is_staff = user.is_staff
+    old_is_superuser = user.is_superuser
     
     if request.method == 'POST':
         form = UserEditForm(request.POST, instance=user)
@@ -272,14 +524,43 @@ def user_edit(request, id):
         if form.is_valid() and password_form.is_valid():
             form.save()
             
+            # Log permission changes
+            if old_is_staff != user.is_staff or old_is_superuser != user.is_superuser:
+                permission_changes = []
+                if old_is_staff != user.is_staff:
+                    permission_changes.append(f'is_staff: {old_is_staff} → {user.is_staff}')
+                if old_is_superuser != user.is_superuser:
+                    permission_changes.append(f'is_superuser: {old_is_superuser} → {user.is_superuser}')
+                
+                log_security_event(
+                    request,
+                    'permission_change',
+                    f'Zmiana uprawnień użytkownika {user.username}: {", ".join(permission_changes)}',
+                    user
+                )
+            
             # Zmień hasło jeśli zostało podane
             new_password = password_form.cleaned_data.get('password')
             if new_password:
                 user.set_password(new_password)
                 user.save()
+                log_security_event(
+                    request,
+                    'password_change',
+                    f'Zmieniono hasło dla użytkownika {user.username}',
+                    user
+                )
                 messages.success(request, f'Hasło dla {user.username} zostało zmienione.')
             
-            messages.success(request, f'Użytkownik {user.username} został zaktualizowany.')
+            log_change(
+                request,
+                'update',
+                'Pracownik',
+                user.username,
+                user.pk,
+                f'Zaktualizowano pracownika {user.username}.'
+            )
+            messages.success(request, f'Pracownik {user.username} został zaktualizowany.')
             return redirect('user_management_list')
     else:
         form = UserEditForm(instance=user)
@@ -289,13 +570,13 @@ def user_edit(request, id):
         'form': form,
         'password_form': password_form,
         'user_obj': user,
-        'title': f'Edytuj użytkownika: {user.username}',
+        'title': f'Edytuj pracownika: {user.username}',
     })
 
 
 @login_required
 def user_delete(request, id):
-    """Usuń użytkownika"""
+    """Usuń pracownika"""
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect('dashboard')
     
@@ -307,8 +588,22 @@ def user_delete(request, id):
     
     if request.method == 'POST':
         username = user.username
+        log_change(
+            request,
+            'delete',
+            'Pracownik',
+            username,
+            user.pk,
+            f'Usunięto pracownika {username}.'
+        )
+        log_security_event(
+            request,
+            'user_deleted',
+            f'Usunięto użytkownika: {username}',
+            user
+        )
         user.delete()
-        messages.success(request, f'Użytkownik {username} został usunięty.')
+        messages.success(request, f'Pracownik {username} został usunięty.')
         return redirect('user_management_list')
     
     return render(request, 'assets/user_delete_confirm.html', {
@@ -382,16 +677,31 @@ def import_assets_csv(request):
                             try:
                                 assigned_to = User.objects.get(username=row['PRZYPISANO DO'])
                             except User.DoesNotExist:
-                                errors.append(f"Wiersz {row_num}: Użytkownik '{row['PRZYPISANO DO']}' nie istnieje")
+                                errors.append(f"Wiersz {row_num}: Pracownik '{row['PRZYPISANO DO']}' nie istnieje")
                                 continue
                         
-                        Asset.objects.create(
-                            tag=row.get('TAG', ''),
-                            category_id=category,
-                            manufacturer=row.get('PRODUCENT', ''),
-                            model=row.get('MODEL', ''),
-                            serial_number=row.get('NUMER SERYJNY', ''),
-                            assigned_to=assigned_to,
+                        serial_number = row.get('NUMER SERYJNY', '').strip()
+                        tag = row.get('TAG', '').strip()
+                        
+                        # If serial_number is empty, use tag as unique identifier
+                        if not serial_number:
+                            serial_number = tag if tag else None
+                        
+                        # If both are empty, skip this row
+                        if not serial_number:
+                            errors.append(f"Wiersz {row_num}: TAG i NUMER SERYJNY są puste")
+                            continue
+                        
+                        # Use update_or_create to handle existing assets with same serial_number
+                        asset, created = Asset.objects.update_or_create(
+                            serial_number=serial_number,
+                            defaults={
+                                'tag': tag,
+                                'category_id': category,
+                                'manufacturer': row.get('PRODUCENT', '').strip(),
+                                'model': row.get('MODEL', '').strip(),
+                                'assigned_to': assigned_to,
+                            }
                         )
                         imported += 1
                     except Exception as e:
@@ -399,6 +709,11 @@ def import_assets_csv(request):
                 
                 if imported > 0:
                     messages.success(request, f'Zaimportowano {imported} urządzeń.')
+                    log_security_event(
+                        request,
+                        'suspicious_activity',
+                        f'Zaimportowano {imported} urządzeń z pliku CSV'
+                    )
                 if errors:
                     for error in errors:
                         messages.warning(request, error)
@@ -416,7 +731,7 @@ def import_assets_csv(request):
 
 @login_required
 def export_users_csv(request):
-    """Eksportuj użytkowników do CSV"""
+    """Eksportuj pracowników do CSV"""
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect('dashboard')
     
@@ -429,7 +744,7 @@ def export_users_csv(request):
     writer.writerow(['LOGIN', 'EMAIL', 'IMIĘ', 'NAZWISKO', 'STATUS'])
     
     for user in users:
-        status = 'Superuser' if user.is_superuser else ('Admin' if user.is_staff else 'Użytkownik')
+        status = 'Administrator systemu' if user.is_superuser else ('Administrator' if user.is_staff else 'Pracownik')
         writer.writerow([
             user.username,
             user.email,
@@ -440,10 +755,9 @@ def export_users_csv(request):
     
     return response
 
-
 @login_required
 def import_users_csv(request):
-    """Importuj użytkowników z CSV"""
+    """Importuj pracowników z CSV"""
     if not (request.user.is_staff or request.user.is_superuser):
         return redirect('dashboard')
     
@@ -476,7 +790,7 @@ def import_users_csv(request):
                             continue
                         
                         if User.objects.filter(username=row['USERNAME']).exists():
-                            errors.append(f"Wiersz {row_num}: Użytkownik '{row['USERNAME']}' już istnieje")
+                            errors.append(f"Wiersz {row_num}: Pracownik '{row['USERNAME']}' już istnieje")
                             continue
                         
                         user = User.objects.create_user(
@@ -491,7 +805,7 @@ def import_users_csv(request):
                         errors.append(f"Wiersz {row_num}: {str(e)}")
                 
                 if imported > 0:
-                    messages.success(request, f'Zaimportowano {imported} użytkowników.')
+                    messages.success(request, f'Zaimportowano {imported} pracowników.')
                 if errors:
                     for error in errors:
                         messages.warning(request, error)

@@ -26,9 +26,9 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.BASE_DIR / 'assets' / 'static')
 
-# Custom error handlers
+# Custom error handlers (for production when DEBUG=False)
 handler404 = error_404
 handler500 = error_500
 handler403 = error_403

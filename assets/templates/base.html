@@ -19,16 +19,17 @@
         <div class="container navbar-content">
             <a href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'login' %}{% endif %}" class="logo-block">
                 <span class="logo-mark">I</span>
-                <span>Inventory</span>
+                <span>Inwentaryzacja</span>
             </a>
 
             {% if user.is_authenticated %}
                 <div class="nav-links tab-menu">
-                    <a href="{% url 'dashboard' %}" class="tab-link">Dashboard</a>
+                    <a href="{% url 'dashboard' %}" class="tab-link">Przegląd</a>
                     <a href="{% url 'asset_list' %}" class="tab-link">Urządzenia</a>
-                    <a href="{% url 'user_list' %}" class="tab-link">Użytkownicy</a>
                     {% if user.is_staff or user.is_superuser %}
-                        <a href="{% url 'permissions_panel' %}" class="tab-link">Uprawnienia</a>
+                        <a href="{% url 'user_list' %}" class="tab-link">Pracownicy</a>
+                        <a href="{% url 'user_management_list' %}" class="tab-link">Zarządzanie</a>
+                        <a href="{% url 'change_history' %}" class="tab-link">Historia zmian</a>
                     {% endif %}
                 </div>
             {% endif %}

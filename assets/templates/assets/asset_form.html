@@ -1,13 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Dodaj sprzęt - Inwentaryzacja{% endblock %}
+{% block title %}{% if is_edit %}Edytuj urządzenie{% else %}Nowe urządzenie{% endif %} - Inwentaryzacja{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
-    
-        <h1>Dodaj urządzenie</h1>
-
+    {% if is_edit %}
+        <h1>Edytuj urządzenie</h1>
+    {% else %}
+        <h1>Nowe urządzenie</h1>
+    {% endif %}
 </div>
 <div class="detail-card">
 
@@ -34,12 +36,18 @@
         {% endfor %}
 
         <div class="form-actions">
-            <a href="{% url 'asset_list' %}" class="cancel-button">
-                Anuluj
-            </a>
+            {% if is_edit %}
+                <a href="{% url 'asset_detail' asset.id %}" class="cancel-button">
+                    Anuluj
+                </a>
+            {% else %}
+                <a href="{% url 'asset_list' %}" class="cancel-button">
+                    Anuluj
+                </a>
+            {% endif %}
 
             <button type="submit" class="search-button">
-                Zapisz
+                {% if is_edit %}Zaktualizuj{% else %}Zapisz{% endif %}
             </button>
         </div>
 
